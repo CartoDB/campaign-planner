@@ -1,0 +1,431 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>Mobile Ad Campaign Planner</title>
+
+  <link href='https://fonts.googleapis.com/css?family=Lato:300,400,700' rel='stylesheet' type='text/css'>
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600" rel="stylesheet">
+  <link href="app.css" media="screen" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/themes/css/cartodb.css" />
+  <script src="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/cartodb.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-geocoder-mapzen/1.9.4/leaflet-geocoder-mapzen.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-geocoder-mapzen/1.9.4/leaflet-geocoder-mapzen.js"></script>
+  <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
+  <script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+  <script src="semantic/dist/semantic.min.js"></script>
+  <script src="semantic/dist/components/dropdown.js"></script>
+  <link rel="stylesheet" type="text/css" href="semantic/dist/components/dropdown.min.css">
+
+<script>
+var map;   
+
+function init() {
+      
+      // initiate leaflet map. Change center and zoom for new demos.
+  map = new L.Map('map', { 
+  center: [32.8203525,-97.011731],
+  zoom: 10,
+  zoomControl: false,
+})
+
+L.control.geocoder('mapzen-XagouUC', {
+  focus: true,
+  placeholder: 'Search',
+  position: 'topright', 
+  params: {
+    sources: 'whosonfirst',
+    'boundary.country': 'USA'
+  },
+  expanded: true
+}).addTo(map);
+
+new L.Control.Zoom({ position: 'bottomleft' }).addTo(map);
+
+var basemap = L.tileLayer('http://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CARTO</a>'
+}).addTo(map);
+
+
+      cartodb.createLayer(map,{
+            type: 'cartodb',
+            options: {
+              user_name: 'mforrest',
+              extra_params: {
+               map_key: '665b6d21a3b9c20906057414b7da378b519df141'
+              }
+            },
+            sublayers: [ 
+            {
+            sql: 'SELECT * FROM dallas_mkt where cartodb_id < 0',
+            cartocss: '#layer {polygon-fill: ramp([pop_sqkm], (#c4e6c3, #96d2a4, #6dbc90, #4da284, #36877a, #266b6e, #1d4f60), quantiles); polygon-opacity: 0.4; } #layer::outline {line-width: 1; line-color: #FFFFFF; line-opacity: 0.5; }'
+            },
+            {
+            sql: 'SELECT * FROM dallas_mobile where cartodb_id < 0',
+            cartocss: '#layer {polygon-fill: ramp([sum_count], (#f3e79b, #fac484, #f8a07e, #eb7f86, #ce6693, #a059a0, #5c53a5), quantiles); polygon-opacity: 0.8; } #layer::outline {line-width: 0; line-color: #FFFFFF; line-opacity: 0.5; }'
+            },
+            {
+            sql: 'SELECT * FROM dallas_iso where cartodb_id < 0',
+            cartocss: '#layer { polygon-fill: #eaeaea; polygon-opacity: 0.3;} #layer::outline {line-width: 0; line-color: #FFFFFF; line-opacity: 0.5; }'
+            },
+            {
+            sql: 'SELECT * FROM dallas_radii where cartodb_id < 0',
+            cartocss: '#layer { polygon-fill: #eaeaea; polygon-opacity: 0.3;} #layer::outline {line-width: 0; line-color: #FFFFFF; line-opacity: 0.5; }'
+            },
+            {
+            sql: 'SELECT * FROM dallas_stores where cartodb_id < 0',
+            cartocss: '#layer { marker-fill: #eaeaea; marker-width: 4; } '
+            }]
+            },
+            {https: true, tooltip: true})
+        .addTo(map)
+        .done(function(layer) {
+          var sublayer = layer.getSubLayer(4);
+          sublayer.setInteractivity('name');
+
+          sublayer.setInteraction(true);
+          var testTooltip = layer.leafletMap.viz.addOverlay({
+                          type: 'tooltip',
+                          layer: sublayer,
+                          template: '<div class="cartodb-tooltip-content-wrapper"><h4>{{name}}</h4></div>', 
+                          position: 'top|right',
+                          fields: [{name: 'name'}]
+                        });  
+          $('body').append(testTooltip.render().el);
+
+          brandsLayer = layer.getSubLayer(4)
+
+          radiiLayer = layer.getSubLayer(3)
+          isolineLayer = layer.getSubLayer(2)
+          demosLayer = layer.getSubLayer(0)  
+          impressionsLayer = layer.getSubLayer(1)          
+
+
+          mapSubLayer2 = layer.getSubLayer(0),
+                         layer.getSubLayer(0).setInteraction(true),
+                          cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0), ['total_pop', 'median_age', 'median_income'],{
+                          infowindowTemplate: $('#iw_template_2').html()
+                        });
+  
+          //console.log(mapSubLayer2);
+        }).on('error', function(err) {
+          //log the error
+          console.log("an error occured: " + err);
+        });
+      $("#button").click(function() {
+
+        var brand = $("#brand").val();
+        console.log(brand);
+
+        var isoline = $("#isoline").val();
+        console.log(isoline);
+       
+        var radii = $("#radii").val();
+        console.log(radii);
+
+
+
+
+
+brandLegend = brand
+colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#63666A']
+
+function makeLegend(array) {
+    // Create the list element:
+    var list = document.createElement('ul');
+    list.setAttribute("class", "legend-ul");
+
+    for(var i = 0; i < array.length; i++) {
+        // Create the list item:
+        var main = document.getElementById('legend-main');
+        main.setAttribute("style", "display: initial");
+
+        var span = document.createElement('span');
+        span.setAttribute("class", "legend-circle");
+        span.setAttribute("style", "background-color: " + colorsLegend[i] + "");
+        
+        var item = document.createElement('p');
+        item.setAttribute("class", "legend-text");
+        item.innerHTML = brandLegend[i];
+        // Add it to the list:
+
+        list.appendChild(span);
+        list.appendChild(item);
+    }
+    console.log(list);
+    return list
+}
+
+var list = document.getElementById('legend-dynamic');     
+list.innerHTML = "";                            
+list.appendChild(makeLegend(brand));
+
+var $set = $('ul.legend-ul').children();    
+for(var i=0, len = $set.length; i < len; i+=2){
+    $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
+}   
+
+
+
+var defaultCartocss = "\
+#layer {\
+  marker-fill: ramp([name], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + '"' + brand.join('"' + ',' + '"') + '"' + "));\
+  opacity: 1;\
+  marker-width: 6;\
+  marker-allow-overlap: true;\
+  marker-line-width: 1;\
+  marker-line-color: #FFF;\
+}"
+
+function generateCartoCSS(study) {
+  if (study === "none") {
+    return defaultCartocss;
+  } else {
+    var newCartocss = defaultCartocss
+
+var comboCartocss = defaultCartocss + newCartocss;
+console.log(comboCartocss);
+return comboCartocss;
+}
+}
+
+$('.ui.checkbox.demos').checkbox({
+  onChecked: function () { demosLayer.set({'sql': "SELECT * FROM dallas_mkt"}); },
+  onUnchecked: function () { demosLayer.set({'sql': "SELECT * FROM dallas_mkt where cartodb_id < 0"}); }
+});
+
+$('.ui.checkbox.impressions').checkbox({
+  onChecked: function () { impressionsLayer.set({'sql': "SELECT * FROM dallas_mobile"}); },
+  onUnchecked: function () { impressionsLayer.set({'sql': "SELECT * FROM dallas_mobile where cartodb_id < 0"}); }
+});
+
+
+        switch (true) {
+
+          case (radii.length !== 0):
+            console.log("You selected both!");
+            radiiLayer.set({
+              'sql': "SELECT * FROM dallas_radii where miles IN ("+ "'" + radii.join("'" + ',' + "'") + "') AND name IN ("+ "$$" + brand.join("$$" + ',' + "$$") + "$$)",
+              'cartocss': "#layer { polygon-fill: #826DBA; polygon-opacity: 0; }  #layer::outline {line-width: 2; line-color: #826DBA; line-opacity: 0.5; }"
+            });
+            console.log(radiiLayer);
+            isolineLayer.set({
+              'sql': "SELECT * FROM dallas_iso where data_range IN ("+ "'" + isoline.join("'" + ',' + "'") + "') AND name IN ("+ "$$" + brand.join("$$" + ',' + "$$") + "$$)",
+              'cartocss': "#layer { polygon-fill: #72a1f2; polygon-opacity: 0.5; }  #layer::outline {line-width: 0; line-color: #FFFFFF; line-opacity: 0.75; }"
+            });
+            console.log(isolineLayer);
+            brandsLayer.set({
+              'sql': "SELECT * FROM dallas_stores WHERE name IN ("+ "$$" + brand.join("$$" + ',' + "$$") + "$$) ",
+              'cartocss': generateCartoCSS(brand)
+            });
+            console.log(brandsLayer);
+            break;
+
+          case (radii.length === 0):
+            console.log("NO BLOCKS SELECTED");
+            brandsLayer.set({
+              'sql': "SELECT * FROM dallas_stores WHERE name IN ("+ "$$" + brand.join("$$" + ',' + "$$") + "$$) ",
+              'cartocss': generateCartoCSS(brand)
+            });
+            console.log(brandsLayer);
+            
+            break;
+        }
+
+
+      });
+    }
+
+  </script>
+</head>
+
+<body onload="init()">
+
+<!-- SIDEBAR -->
+<div class='app-title'>
+<h1>Mobile Ad Campaign Planner</h1>
+</div>
+<div class='app-menu'>
+<div class='app-icon open button'>
+  <nav role="navigation">
+  <div id="menuToggle">
+    <span></span>
+    <span></span>
+    <span></span>
+</div>
+</nav>
+</div>
+
+</div>
+
+
+
+
+<!-- MAP -->
+
+<div class='fullSize' id='map'>
+<div class="legend" id="legend-main" style="display: none;">
+<div class="legend-inner" id="legend-dynamic">
+
+
+</div>
+</div>
+</div>
+
+<div id='toolbar'>
+
+
+
+<!-- <select id="userIDSelect" class="ui multiple dropdown">
+    <option value="ICLS">ICLS</option>
+    <option value="2015">2015</option>
+</select> -->
+<p>BRAND</p>
+
+<select id="brand" class="ui multiple search dropdown brand" multiple="">
+</select>
+
+<br></br>
+
+<p>RADIUS</p>
+
+<select id="radii" class="ui multiple dropdown radii" multiple="">
+</select>
+
+<br></br>
+
+<p>DRIVE TIME</p>
+
+<select id="isoline" class="ui multiple dropdown isoline" multiple="">
+</select>
+
+<br></br>
+
+<div class="ui checkbox demos">
+  <input type="checkbox" name="demos">
+  <label>Demographics</label>
+</div>
+
+<br></br>
+
+<div class="ui checkbox impressions">
+  <input type="checkbox" name="impressions">
+  <label>Impressions</label>
+</div>
+
+<br></br>
+
+<p id="button" class="button button--blue">
+<button  class="ui primary button">
+<a style="color:white;" href="#">VISUALIZE</a>
+</button>       
+</p>
+
+
+<div class="ui sidebar inverted vertical menu">
+  <p style="color: #fff;"></p>
+
+</div>
+
+
+
+
+</div>
+<!-- TOOLBAR --> 
+</div>
+
+
+<script type="infowindow/html" id="iw_template_2">
+<div class="cartodb-popup v2">
+<a href="#close" class="cartodb-popup-close-button close">x</a>
+<div class="cartodb-popup-content">
+<div class="cartodb-popup-content-wrapper">
+<p class="title">Total Pop: {{total_pop}}</p>
+<h4>MEDIAN INCOME</h4>
+<p>{{median_income}}</p>
+<h4>AGE</h4>
+<p>{{median_age}}</p>
+</div>
+</div>
+</div>
+<div class="cartodb-popup-tip-container">
+</div>
+
+</script>
+
+<script>
+
+
+
+$('.ui.multiple.dropdown.brand').dropdown({ 
+  maxSelections: 5,
+  fields: { name: "name", value: "value" },
+  apiSettings: {
+      cache: false,
+      onResponse: function(cartoResponse) {
+        return {
+            "success": true,
+            "results": cartoResponse.rows
+        };
+    },
+    url: 'https://mforrest.carto.com/api/v2/sql?q=select%20name%20as%20name,%20name%20as%20value,%20count(*)%20from%20dallas_stores%20group%20by%20name%20order%20by%20count%20desc',
+    },
+    saveRemoteData: false,
+    filterRemoteData: true,
+    dataType: JSON
+  });
+
+$('.ui.multiple.dropdown.isoline').dropdown({ 
+  maxSelections: 5,
+  fields: { name: "name", value: "value" },
+  apiSettings: {
+      cache: false,
+      onResponse: function(cartoResponse) {
+        return {
+            "success": true,
+            "results": cartoResponse.rows
+        };
+    },
+    url: 'https://mforrest.carto.com/api/v2/sql?q=select%20CONCAT(data_range::text,%20%27%20%27,%20%27min.%27)%20as%20name,%20data_range%20as%20value,%20count(*)%20from%20dallas_iso%20group%20by%20data_range%20order%20by%20count%20desc',
+    },
+    saveRemoteData: false,
+    filterRemoteData: true,
+    dataType: JSON
+  })
+
+$('.ui.multiple.dropdown.radii').dropdown({ 
+  maxSelections: 5,
+  fields: { name: "name", value: "value" },
+  apiSettings: {
+      cache: false,
+      onResponse: function(cartoResponse) {
+        return {
+            "success": true,
+            "results": cartoResponse.rows
+        };
+    },
+    url: 'https://mforrest.carto.com/api/v2/sql?q=select%20CONCAT(miles::text,%20%27%20%27,%20%27mi.%27)%20as%20name,%20miles%20as%20value,%20count(*)%20from%20dallas_radii%20group%20by%20miles%20order%20by%20miles%20asc',
+    },
+    saveRemoteData: false,
+    filterRemoteData: true,
+    dataType: JSON
+  })
+
+
+$('.ui.sidebar').sidebar({
+  dimPage: false,
+  transition: 'push',
+});
+
+ $('.ui.sidebar')
+.sidebar('attach events', '.open.button');
+
+
+
+</script>
+</body>
+</html>
